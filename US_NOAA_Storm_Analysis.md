@@ -246,6 +246,12 @@ storm_subset$Total_CROPDMG <- mapply(ApplyP10, storm_subset$CROPDMG,storm_subset
 
 # Total property and crop damage
 storm_subset$Total_DMG <- storm_subset$Total_PROPDMG + storm_subset$Total_CROPDMG
+
+# Max Property and Crop damage and total max
+
+Max_PROPDMG <- max(storm_subset$Total_PROPDMG, na.rm = TRUE)
+Max_CROPDMG <- max(storm_subset$Total_CROPDMG, na.rm = TRUE)
+Max_DMG <- max(storm_subset$Total_DMG, na.rm = TRUE)
 ```
 
 Now combine the economic damage based on the various weather groups
@@ -258,7 +264,7 @@ Total_Damage <- aggregate(cbind(Total_PROPDMG, Total_CROPDMG, Total_DMG) ~ EVGRO
 
 Total_Damage <- Total_Damage[order(Total_Damage$Total_DMG, decreasing = TRUE),]
 
-#Total_Damage$EVGROUP <- factor(Total_Damage$EVGROUP, levels=rev(Total_Damage$EVGROUP))
+Total_Damage$EVGROUP <- factor(Total_Damage$EVGROUP, levels=rev(Total_Damage$EVGROUP))
 
 # Gather the Total_Damage into data frame - use reshape2::melt(), similar to tidyr:
 
@@ -281,19 +287,98 @@ We must now combine the number of fatalities and injuries based on the various w
 
 
 ```r
-Total__Human_Damage <- aggregate(cbind(INJURIES, FATALITIES) ~ EVGROUP, storm_subset, sum, na.rm=TRUE)
+# Calculate the total number of injuries and fatalities
+storm_subset$FATALITIES_INJURIES <- storm_subset$FATALITIES + storm_subset$INJURIES
+
+Total_Human_Damage <- aggregate(cbind(INJURIES, FATALITIES, FATALITIES_INJURIES) ~ EVGROUP, storm_subset, sum, na.rm=TRUE)
 
 # Order from highest to lowest total damage
+Total_Human_Damage <- Total_Human_Damage[order(Total_Human_Damage$FATALITIES_INJURIES, decreasing = TRUE),]
 
-Total_Damage <- Total_Damage[order(Total_Damage$Total_DMG, decreasing = TRUE),]
+Total_Human_Damage$EVGROUP <- factor(Total_Human_Damage$EVGROUP, levels=rev(Total_Human_Damage$EVGROUP))
+
+# Max injuries and max fatalities
+
+Max_injuries <- max(Total_Human_Damage$INJURIES)
+Max_fatalities <- max(Total_Human_Damage$FATALITIES)
 ```
-
-
-
 
 ## 3) Results 
 
+Below is a summary of the cleaned and sorted storm dataset:
 
+
+```r
+str(storm_subset)
+```
+
+```
+## 'data.frame':	523144 obs. of  14 variables:
+##  $ BGN_DATE           : Date, format: "2000-02-13" "2000-02-13" ...
+##  $ STATE              : Factor w/ 72 levels "AK","AL","AM",..: 2 2 2 2 2 2 2 2 2 2 ...
+##  $ EVTYPE             : Factor w/ 985 levels "   HIGH SURF ADVISORY",..: 856 856 856 856 856 244 856 856 856 856 ...
+##  $ FATALITIES         : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ INJURIES           : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ PROPDMG            : num  20 20 2 5 2 5 4 30 20 25 ...
+##  $ PROPDMGEXP         : Factor w/ 19 levels "","-","?","+",..: 17 17 17 17 17 17 17 17 17 17 ...
+##  $ CROPDMG            : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ CROPDMGEXP         : Factor w/ 9 levels "","?","0","2",..: 7 7 7 7 7 7 7 7 7 7 ...
+##  $ EVGROUP            : Factor w/ 8 levels "Fire and Volcanos",..: 8 8 8 8 8 7 8 8 8 8 ...
+##  $ Total_PROPDMG      : num  20000 20000 2000 5000 2000 5000 4000 30000 20000 25000 ...
+##  $ Total_CROPDMG      : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ Total_DMG          : num  20000 20000 2000 5000 2000 5000 4000 30000 20000 25000 ...
+##  $ FATALITIES_INJURIES: num  0 0 0 0 0 0 0 0 0 0 ...
+```
+
+### 3.1) Summary of the economic consequences
+
+This is a summary of the economic consequences of the various weather events
+
+
+```r
+Total_Damage
+```
+
+```
+##                       EVGROUP Total_PROPDMG Total_CROPDMG    Total_DMG
+## 2                    Flooding  146911207450    5126794900 152038002350
+## 8            Tornado and Wind   89484960060    1939134610  91424094670
+## 4   Hurricane and Stormy Seas   72504008010    3056872800  75560880810
+## 7 Lightning and Percipitation   13066828330    2200042800  15266871130
+## 3        Heatwave and Drought     853798730    9628176500  10481975230
+## 1           Fire and Volcanos    7114562000     304549430   7419111430
+## 5                Ice and Snow     536385030    1320561000   1856946030
+## 6                  Landslides     325903000      20017000    345920000
+```
+
+* The weather event with the largest property damage was a
+flood
+on 2006-01-01, that caused
+$115000000000 of damage.
+
+* The weather event with the largest crop damage was a
+hurricane/typhoon
+on 2005-08-29, that caused
+$1510000000 of damage.
+
+* The weather event with the largest total propert and crop damage was a
+flood
+on 2006-01-01, that caused
+$115032500000 of damage.
+
+
+```r
+econ_title <- "Total Property and Crop damage from Weather Events since 2000 to 2011"
+
+ggplot(gathered_Total_Damage, aes(x=EVGROUP, y=Damage/1000000)) + 
+  geom_bar(stat = "identity", aes(fill=DamageType)) +
+  xlab("Event Grouping") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) +
+  ylab("Total Economic Damage ($MM USD)") +
+  ggtitle(econ_title)
+```
+
+![](US_NOAA_Storm_Analysis_files/figure-html/economic consequences-1.png)<!-- -->
 
 TBD
 

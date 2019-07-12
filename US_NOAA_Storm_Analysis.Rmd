@@ -253,6 +253,13 @@ storm_subset$Total_CROPDMG <- mapply(ApplyP10, storm_subset$CROPDMG,storm_subset
 # Total property and crop damage
 storm_subset$Total_DMG <- storm_subset$Total_PROPDMG + storm_subset$Total_CROPDMG
 
+# Max Property and Crop damage and total max
+
+Max_PROPDMG <- max(storm_subset$Total_PROPDMG, na.rm = TRUE)
+Max_CROPDMG <- max(storm_subset$Total_CROPDMG, na.rm = TRUE)
+Max_DMG <- max(storm_subset$Total_DMG, na.rm = TRUE)
+
+
 ```
 
 Now combine the economic damage based on the various weather groups
@@ -265,7 +272,7 @@ Total_Damage <- aggregate(cbind(Total_PROPDMG, Total_CROPDMG, Total_DMG) ~ EVGRO
 
 Total_Damage <- Total_Damage[order(Total_Damage$Total_DMG, decreasing = TRUE),]
 
-#Total_Damage$EVGROUP <- factor(Total_Damage$EVGROUP, levels=rev(Total_Damage$EVGROUP))
+Total_Damage$EVGROUP <- factor(Total_Damage$EVGROUP, levels=rev(Total_Damage$EVGROUP))
 
 # Gather the Total_Damage into data frame - use reshape2::melt(), similar to tidyr:
 
@@ -289,21 +296,71 @@ We must now combine the number of fatalities and injuries based on the various w
 
 ``` {r fatalities/injuries}
 
-Total__Human_Damage <- aggregate(cbind(INJURIES, FATALITIES) ~ EVGROUP, storm_subset, sum, na.rm=TRUE)
+# Calculate the total number of injuries and fatalities
+storm_subset$FATALITIES_INJURIES <- storm_subset$FATALITIES + storm_subset$INJURIES
+
+Total_Human_Damage <- aggregate(cbind(INJURIES, FATALITIES, FATALITIES_INJURIES) ~ EVGROUP, storm_subset, sum, na.rm=TRUE)
 
 # Order from highest to lowest total damage
+Total_Human_Damage <- Total_Human_Damage[order(Total_Human_Damage$FATALITIES_INJURIES, decreasing = TRUE),]
 
-Total_Damage <- Total_Damage[order(Total_Damage$Total_DMG, decreasing = TRUE),]
+Total_Human_Damage$EVGROUP <- factor(Total_Human_Damage$EVGROUP, levels=rev(Total_Human_Damage$EVGROUP))
 
+# Max injuries and max fatalities
+
+Max_injuries <- max(Total_Human_Damage$INJURIES)
+Max_fatalities <- max(Total_Human_Damage$FATALITIES)
 
 ```
 
-
-
-
 ## 3) Results 
 
+Below is a summary of the cleaned and sorted storm dataset:
 
+``` {r data summary}
+
+str(storm_subset)
+
+```
+
+### 3.1) Summary of the economic consequences
+
+This is a summary of the economic consequences of the various weather events
+
+``` {r economic summary}
+
+Total_Damage
+
+```
+
+* The weather event with the largest property damage was a
+`r tolower(storm_subset[which.max(storm_subset$Total_PROPDMG), "EVTYPE"])`
+on `r storm_subset[which.max(storm_subset$Total_PROPDMG), "BGN_DATE"]`, that caused
+$`r Max_PROPDMG` of damage.
+
+* The weather event with the largest crop damage was a
+`r tolower(storm_subset[which.max(storm_subset$Total_CROPDMG), "EVTYPE"])`
+on `r storm_subset[which.max(storm_subset$Total_CROPDMG), "BGN_DATE"]`, that caused
+$`r Max_CROPDMG` of damage.
+
+* The weather event with the largest total propert and crop damage was a
+`r tolower(storm_subset[which.max(storm_subset$Total_DMG), "EVTYPE"])`
+on `r storm_subset[which.max(storm_subset$Total_DMG), "BGN_DATE"]`, that caused
+$`r Max_DMG` of damage.
+
+``` {r economic consequences}
+
+econ_title <- "Total Property and Crop damage from Weather Events since 2000 to 2011"
+
+ggplot(gathered_Total_Damage, aes(x=EVGROUP, y=Damage/1000000)) + 
+  geom_bar(stat = "identity", aes(fill=DamageType)) +
+  xlab("Event Grouping") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) +
+  ylab("Total Economic Damage ($MM USD)") +
+  ggtitle(econ_title)
+
+
+```
 
 TBD
 
