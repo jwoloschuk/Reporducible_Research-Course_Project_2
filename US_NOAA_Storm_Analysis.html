@@ -403,6 +403,7 @@ $(document).ready(function () {
 <h3>2.1) Loading Libraries</h3>
 <p>Load necessary libraries for data analysis and developing results</p>
 <pre class="r"><code>library(ggplot2)
+library(reshape2)
 library(dplyr)
 # R.utils for bunzip2. It is faster to unzip the .csv.bz2 first instead of directly
 # using read.csv(). This was tested by using system.time() for both methods.
@@ -553,14 +554,14 @@ Power10 &lt;- function(x){
   x
 }</code></pre>
 <p>With this Power10 function, we still need a function to apply this exponential power to the CROPDMG and PROPDMG damage values.</p>
-<pre class="r"><code>ApplyP10 &lt;- function(num, exp) {
+<pre class="r"><code>ApplyP10 &lt;- function(dmg, exp) {
   
   P10 &lt;- Power10(exp)
   
-  if(is.numeric(num)){num &lt;- num * (10 ^ P10)}
-  if(!is.numeric(num)){num &lt;- 0}
+  if(is.numeric(dmg)){dmg &lt;- dmg * (10 ^ P10)}
+  if(!is.numeric(dmg)){dmg &lt;- 0}
   
-  num
+  dmg
   
 }</code></pre>
 <p>Now with the Power10 and the ApplyP10 functions, we can calculate the total property and crop damage</p>
@@ -572,6 +573,37 @@ storm_subset$Total_CROPDMG &lt;- mapply(ApplyP10, storm_subset$CROPDMG,storm_sub
 
 # Total property and crop damage
 storm_subset$Total_DMG &lt;- storm_subset$Total_PROPDMG + storm_subset$Total_CROPDMG</code></pre>
+<p>Now combine the economic damage based on the various weather groups</p>
+<pre class="r"><code>Total_Damage &lt;- aggregate(cbind(Total_PROPDMG, Total_CROPDMG, Total_DMG) ~ EVGROUP, storm_subset, sum, na.rm=TRUE)
+
+# Order from highest to lowest total damage
+
+Total_Damage &lt;- Total_Damage[order(Total_Damage$Total_DMG, decreasing = TRUE),]
+
+#Total_Damage$EVGROUP &lt;- factor(Total_Damage$EVGROUP, levels=rev(Total_Damage$EVGROUP))
+
+# Gather the Total_Damage into data frame - use reshape2::melt(), similar to tidyr:
+
+gathered_Total_Damage &lt;- Total_Damage %&gt;% melt(
+  id.vars=c(&quot;EVGROUP&quot;), measure.vars=c(&quot;Total_PROPDMG&quot;,&quot;Total_CROPDMG&quot;),
+  variable.name=&quot;DamageType&quot;, value.name=&quot;Damage&quot;) 
+
+# Create Property level for easier grouping
+levels(gathered_Total_Damage$DamageType)[levels(
+  gathered_Total_Damage$DamageType)==&quot;Total_PROPDMG&quot;] &lt;- &quot;Property&quot;
+
+# Create Crop level for easier grouping
+levels(gathered_Total_Damage$DamageType)[levels(
+  gathered_Total_Damage$DamageType)==&quot;Total_CROPDMG&quot;] &lt;- &quot;Crop&quot;</code></pre>
+</div>
+<div id="aggregate-fatalities-and-injuries" class="section level3">
+<h3>2.5) Aggregate fatalities and injuries</h3>
+<p>We must now combine the number of fatalities and injuries based on the various weather groups</p>
+<pre class="r"><code>Total__Human_Damage &lt;- aggregate(cbind(INJURIES, FATALITIES) ~ EVGROUP, storm_subset, sum, na.rm=TRUE)
+
+# Order from highest to lowest total damage
+
+Total_Damage &lt;- Total_Damage[order(Total_Damage$Total_DMG, decreasing = TRUE),]</code></pre>
 </div>
 </div>
 <div id="results" class="section level2">

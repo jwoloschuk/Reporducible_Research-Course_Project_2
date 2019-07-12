@@ -39,6 +39,7 @@ Load necessary libraries for data analysis and developing results
 
 ```r
 library(ggplot2)
+library(reshape2)
 library(dplyr)
 # R.utils for bunzip2. It is faster to unzip the .csv.bz2 first instead of directly
 # using read.csv(). This was tested by using system.time() for both methods.
@@ -221,14 +222,14 @@ With this Power10 function, we still need a function to apply this exponential p
 
 
 ```r
-ApplyP10 <- function(num, exp) {
+ApplyP10 <- function(dmg, exp) {
   
   P10 <- Power10(exp)
   
-  if(is.numeric(num)){num <- num * (10 ^ P10)}
-  if(!is.numeric(num)){num <- 0}
+  if(is.numeric(dmg)){dmg <- dmg * (10 ^ P10)}
+  if(!is.numeric(dmg)){dmg <- 0}
   
-  num
+  dmg
   
 }
 ```
@@ -246,6 +247,49 @@ storm_subset$Total_CROPDMG <- mapply(ApplyP10, storm_subset$CROPDMG,storm_subset
 # Total property and crop damage
 storm_subset$Total_DMG <- storm_subset$Total_PROPDMG + storm_subset$Total_CROPDMG
 ```
+
+Now combine the economic damage based on the various weather groups
+
+
+```r
+Total_Damage <- aggregate(cbind(Total_PROPDMG, Total_CROPDMG, Total_DMG) ~ EVGROUP, storm_subset, sum, na.rm=TRUE)
+
+# Order from highest to lowest total damage
+
+Total_Damage <- Total_Damage[order(Total_Damage$Total_DMG, decreasing = TRUE),]
+
+#Total_Damage$EVGROUP <- factor(Total_Damage$EVGROUP, levels=rev(Total_Damage$EVGROUP))
+
+# Gather the Total_Damage into data frame - use reshape2::melt(), similar to tidyr:
+
+gathered_Total_Damage <- Total_Damage %>% melt(
+  id.vars=c("EVGROUP"), measure.vars=c("Total_PROPDMG","Total_CROPDMG"),
+  variable.name="DamageType", value.name="Damage") 
+
+# Create Property level for easier grouping
+levels(gathered_Total_Damage$DamageType)[levels(
+  gathered_Total_Damage$DamageType)=="Total_PROPDMG"] <- "Property"
+
+# Create Crop level for easier grouping
+levels(gathered_Total_Damage$DamageType)[levels(
+  gathered_Total_Damage$DamageType)=="Total_CROPDMG"] <- "Crop"
+```
+
+### 2.5) Aggregate fatalities and injuries
+
+We must now combine the number of fatalities and injuries based on the various weather groups
+
+
+```r
+Total__Human_Damage <- aggregate(cbind(INJURIES, FATALITIES) ~ EVGROUP, storm_subset, sum, na.rm=TRUE)
+
+# Order from highest to lowest total damage
+
+Total_Damage <- Total_Damage[order(Total_Damage$Total_DMG, decreasing = TRUE),]
+```
+
+
+
 
 ## 3) Results 
 
