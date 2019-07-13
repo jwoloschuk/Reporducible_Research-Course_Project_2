@@ -1,7 +1,6 @@
 ---
-title: "US_NOAA_Storm_Analysis"
 author: "Jordan Woloschuk"
-date: "7/11/2019"
+date: "7/12/2019"
 output: 
         html_document:
                 keep_md: true
@@ -18,16 +17,13 @@ output:
 
 The basic goal of this assignment is to explore the NOAA Storm Database and answer some basic questions about severe weather events. You must use the database to answer the questions below and show the code for your entire analysis. Your analysis can consist of tables, figures, or other summaries. You may use any R package you want to support your analysis.
 
-## 1) Synopsos
-
-TK
-
+## 1) Synopsis
 
 The US National Oceanic and Atmospheric Administration's (NOAA) storm database tracks characteristics of major storms and weather events in the United States between 1950 and 2011. This database includes when and where these weather events occur, as well as estimates of any fatalities, injuries, and property damage. In this analysis we seek to describe the type of major storm or weather event that have caused the greatest human health and economic cost in the United States. For the analysis, we have focused our attention weather events after January 1, 2000 given the greater completeness of the dataset.
 
-Our overall hypothesis is that XXXXXX 
+Our overall hypothesis is that Tornadoes will acount for the largest number of deaths and injuries due to the severity of events and the numerous yearly occuranaces. While it is expected that Hurricanes will account for the largest total economic damage. 
 
-From the NOAA storm dataset, we found that XXXX 
+From the NOAA storm dataset, we found that on average property damage greatly exceeds damage to corps. It was also determined that Flooding has casued the greatest total economic damage (although it is unclear what amount of Flooding is due to Hurricanes/Stormy Seas). It was also determined that Tornandos have caused the largest number of deaths and injuries.
 
 
 ## 2) Data Processing
@@ -44,7 +40,8 @@ library(dplyr)
 # R.utils for bunzip2. It is faster to unzip the .csv.bz2 first instead of directly
 # using read.csv(). This was tested by using system.time() for both methods.
 library(R.utils) 
-
+# Using gridExtra to combine multiple plots
+library(gridExtra)
 
 # Want to remove scientific notation
 options(scipen=999)
@@ -84,15 +81,15 @@ raw_data <- read.csv(csvfile)
 ### 2.2) Modifying the Data and select timeframe
 
 Only want to focus on a select number of key columns for this analysis:   
-    1. BGN_DATE: Begining Date  
-    2. STATE: State  
-    3. EVTYPE: Weather event type  
-    4. FATALITIES: Number of fatalitities  
-    5. INJURIES: Number of injuries  
-    6. PROPDMG: Property damage  
-    7. PROPDMGEXP: Property damage exponent  
-    8. CROPDMG: Crop damage  
-    9. CROPDMGEXP Crop damage exponent  
+    1) BGN_DATE: Begining Date  
+    2) STATE: State  
+    3) EVTYPE: Weather event type  
+    4) FATALITIES: Number of fatalitities  
+    5) INJURIES: Number of injuries  
+    6) PROPDMG: Property damage  
+    7) PROPDMGEXP: Property damage exponent  
+    8) CROPDMG: Crop damage  
+    9) CROPDMGEXP Crop damage exponent  
 
 
 
@@ -130,7 +127,8 @@ We will also limit the analysis for storms that have occured since only 379134 i
 This represents only 42.02 % of the total dataset occuring over a period of 18260 days.   
 In contrast, 523163 weather instance occur after January 1, 2000 over a period of 4351 days.    
 
-However, if we examine the storm EVTYPE dataset, we can see that there are a total of 985 unique weather related classifications. The following 
+However, if we examine the storm EVTYPE dataset, we can see that there are a total of 985 unique weather related classifications.  
+The following shows a summary of the number of weather event types. 
 
 
 ```r
@@ -144,7 +142,7 @@ head(storm_data$EVTYPE)
 
 ### 2.3) Develop new weather event classification groupings
 
-A large number of these weather events are related and could be consolidated for improved interpretation of the data. In the following steps we will develop 8 new simplified weather classifications. 
+A large number of these 985 weather events are related and could be consolidated for improved interpretation of the data. In the following steps we will develop 8 new simplified weather classifications. 
 
 
 
@@ -198,6 +196,8 @@ storm_subset$EVGROUP <- as.factor(storm_subset$EVGROUP)
 
 storm_subset <- storm_subset[!is.na(storm_subset$EVGROUP),]
 ```
+
+Note: we have remove a total of 6 observations that were classified as "OTHER" weather events or "NORTHERN LIGHTS" for the purpose of this analysis.
 
 ### 2.4) Calculate absolute property damage figures
 
@@ -264,7 +264,8 @@ Total_Damage <- aggregate(cbind(Total_PROPDMG, Total_CROPDMG, Total_DMG) ~ EVGRO
 
 Total_Damage <- Total_Damage[order(Total_Damage$Total_DMG, decreasing = TRUE),]
 
-Total_Damage$EVGROUP <- factor(Total_Damage$EVGROUP, levels=rev(Total_Damage$EVGROUP))
+# Sorting levels for plots
+Total_Damage$EVGROUP <- factor(Total_Damage$EVGROUP, levels=(Total_Damage$EVGROUP))
 
 # Gather the Total_Damage into data frame - use reshape2::melt(), similar to tidyr:
 
@@ -295,7 +296,8 @@ Total_Human_Damage <- aggregate(cbind(INJURIES, FATALITIES, FATALITIES_INJURIES)
 # Order from highest to lowest total damage
 Total_Human_Damage <- Total_Human_Damage[order(Total_Human_Damage$FATALITIES_INJURIES, decreasing = TRUE),]
 
-Total_Human_Damage$EVGROUP <- factor(Total_Human_Damage$EVGROUP, levels=rev(Total_Human_Damage$EVGROUP))
+# Sorting levels for plots
+Total_Human_Damage$EVGROUP <- factor(Total_Human_Damage$EVGROUP, levels=(Total_Human_Damage$EVGROUP))
 
 # Max injuries and max fatalities
 
@@ -330,7 +332,60 @@ str(storm_subset)
 ##  $ FATALITIES_INJURIES: num  0 0 0 0 0 0 0 0 0 0 ...
 ```
 
-### 3.1) Summary of the economic consequences
+### 3.1) Summary of the impact on population
+
+This is a summary of the harm to the population as a result of the various weather events
+
+
+```r
+Total_Human_Damage
+```
+
+```
+##                       EVGROUP INJURIES FATALITIES FATALITIES_INJURIES
+## 8            Tornado and Wind    20570       2153               22723
+## 3        Heatwave and Drought     4992       1248                6240
+## 7 Lightning and Percipitation     4179        556                4735
+## 4   Hurricane and Stormy Seas     1817        578                2395
+## 2                    Flooding     1365       1004                2369
+## 5                Ice and Snow      953        334                1287
+## 1           Fire and Volcanos     1199         84                1283
+## 6                  Landslides       52         37                  89
+```
+
+* The weather event with the largest number of fatalities was a
+tornado
+on 2011-05-22, that caused
+2153 deaths.
+
+* The weather event with the largest number of injuries was a
+tornado
+on 2011-05-22, that caused
+20570 injuries.
+
+
+```r
+health_title <- "Total Injuries and Fatalities from Weather Events since 2000 to 2011"
+
+g_injuries <- ggplot(Total_Human_Damage, aes(x=EVGROUP, y=INJURIES)) + 
+  geom_bar(stat = "identity", fill="Blue") + xlab("Injuries") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) +
+  ylab("Total Number of Injuries") +labs(fill="Injuries")
+  
+g_deaths <- ggplot(Total_Human_Damage, aes(x=EVGROUP, y=FATALITIES)) + 
+  geom_bar(stat = "identity", fill="Red") + xlab("Fatalities") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) +
+  ylab("Total Number of Fatalities")
+  
+grid.arrange(g_injuries,g_deaths, ncol = 2,
+             top = health_title)
+```
+
+![](US_NOAA_Storm_Analysis_files/figure-html/injury consequences-1.png)<!-- -->
+
+From these figures it can be seen that the Tornados and Wind have cause the greatest number of fatalities and injuries. It should also be noted that Flooding causes a greater number of deaths given the relatively few Flooding related injuries. Heatwaves and Drought also appear to cause a greater number of deaths given the relatively few injuries. This is likely due to the nature of the injuries that tend to be more fatal (e.g.. drowning and heatstroke / dehydration).
+
+### 3.2) Summary of the economic consequences
 
 This is a summary of the economic consequences of the various weather events
 
@@ -370,19 +425,19 @@ $115032500000 of damage.
 ```r
 econ_title <- "Total Property and Crop damage from Weather Events since 2000 to 2011"
 
-ggplot(gathered_Total_Damage, aes(x=EVGROUP, y=Damage/1000000)) + 
+g_economic <- ggplot(gathered_Total_Damage, aes(x=EVGROUP, y=Damage/1000000)) + 
   geom_bar(stat = "identity", aes(fill=DamageType)) +
   xlab("Event Grouping") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) +
   ylab("Total Economic Damage ($MM USD)") +
   ggtitle(econ_title)
+
+g_economic
 ```
 
 ![](US_NOAA_Storm_Analysis_files/figure-html/economic consequences-1.png)<!-- -->
 
-TBD
 
-(States the type of event that causes the greatest harm to human health)
-(states the type of even that causes the greatest economic consequences)
+From this plot it can be seen that the property damage greatly exceeds damage to crops. This is the case for all weather events, except for Heatwave and Drought which have a high crop damage compared to property damage (as would be expected).
 
 
