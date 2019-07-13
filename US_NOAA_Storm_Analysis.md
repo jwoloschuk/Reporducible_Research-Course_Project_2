@@ -381,7 +381,7 @@ grid.arrange(g_injuries,g_deaths, ncol = 2,
              top = health_title)
 ```
 
-![](US_NOAA_Storm_Analysis_files/figure-html/injury consequences-1.png)<!-- -->
+![(US_NOAA_Storm_Analysis_files/figure-html/injury consequences-1.png)
 
 From these figures it can be seen that the Tornados and Wind have cause the greatest number of fatalities and injuries. It should also be noted that Flooding causes a greater number of deaths given the relatively few Flooding related injuries. Heatwaves and Drought also appear to cause a greater number of deaths given the relatively few injuries. This is likely due to the nature of the injuries that tend to be more fatal (e.g.. drowning and heatstroke / dehydration).
 
