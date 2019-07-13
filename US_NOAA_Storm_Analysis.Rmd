@@ -2,8 +2,8 @@
 author: "Jordan Woloschuk"
 date: "7/12/2019"
 output: 
-        html_document:
-                keep_md: true
+        html_document: 
+          keep_md: yes
 ---
 
 
