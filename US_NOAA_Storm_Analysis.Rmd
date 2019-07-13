@@ -9,6 +9,8 @@ knitr::opts_chunk$set(echo = TRUE)
 # US NOAA Storm Database Analysis on the Cost and Magnitude of Recent Storms
 ### Reporducible Research: Peer Assessment #2
 
+Author: Jordan Woloschuk
+
 ## Assignment Overview
 
 The basic goal of this assignment is to explore the NOAA Storm Database and answer some basic questions about severe weather events. You must use the database to answer the questions below and show the code for your entire analysis. Your analysis can consist of tables, figures, or other summaries. You may use any R package you want to support your analysis.
